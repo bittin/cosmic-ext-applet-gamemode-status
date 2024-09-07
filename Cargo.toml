@@ -1,0 +1,47 @@
+[package]
+name = "cosmic-ext-applet-gamemode-status"
+version = "0.1.0"
+edition = "2021"
+authors = ["D-Brox <davidfbg00@gmail.com>"]
+description = "GameMode status applet for the COSMIC DE"
+readme = "README.md"
+license = "GPL-3.0"
+homepage = "https://github.com/D-Brox/cosmic-ext-applet-gamemode-status"
+repository = "https://github.com/D-Brox/cosmic-ext-applet-gamemode-status.git"
+rust-version = "1.80"
+
+[dependencies]
+futures-util = "0.3.30"
+i18n-embed-fl = "0.9.1"
+rust-embed = "8.3.0"
+serde = "1.0.209"
+sysinfo = "0.31.4"
+zbus = "4.4.0"
+zbus_macros = "4.4.0"
+zvariant = "4.2.0"
+
+[dependencies.libcosmic]
+git = "https://github.com/pop-os/libcosmic.git"
+rev = "0a1922d4b378de23f55b117b07bad23dda0d64d0"
+default-features = false
+features = ["applet", "tokio", "wayland"]
+
+[dependencies.i18n-embed]
+version = "0.15"
+features = ["fluent-system", "desktop-requester"]
+
+[package.metadata.deb]
+license-file = "LICENSE"
+assets = [
+    ["target/release/cosmic-ext-applet-gamemode-status", "usr/bin/", "755"],
+    ["res/dev.DBrox.CosmicGameModeStatus.desktop", "usr/share/applications/", "644"],
+    ["res/dev.DBrox.CosmicGameModeStatus.metainfo.xml", "usr/share/metainfo/", "644"],
+]
+depends = ["gamemode", "libsystemd0","$auto"]
+
+[profile.release]
+strip = true
+lto = true
+
+# [patch.'https://github.com/pop-os/libcosmic']
+# libcosmic = { path = "../libcosmic" }
