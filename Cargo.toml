@@ -1,6 +1,6 @@
 [package]
 name = "cosmic-ext-applet-gamemode-status"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["D-Brox <davidfbg00@gmail.com>"]
 description = "GameMode status applet for the COSMIC DE"

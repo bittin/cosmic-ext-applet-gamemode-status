@@ -32,7 +32,8 @@ pub struct GameModeStatus {
 pub enum Message {
     TogglePopup,
     PopupClosed(Id),
-    GameListUpdate,
+    GameListAdd(i32),
+    GameListRemove(i32),
     GameListSet(Vec<i32>),
 }
 
@@ -130,7 +131,25 @@ impl Application for GameModeStatus {
                     self.popup = None;
                 }
             }
-            Message::GameListUpdate => (),
+            Message::GameListAdd(pid) => {
+                println!("re {pid}");
+                let p = Pid::from(pid as usize);
+                self.sys.refresh_processes(ProcessesToUpdate::Some(&[p]));
+                if let Some(process) = self.sys.process(p) {
+                    if let Some(exe_path) = process.exe() {
+                        if let Some(exe_name) = exe_path.file_name() {
+                            if let Some(exe_str) = exe_name.to_str() {
+                                let exe = exe_str.to_string();
+                                self.games.insert(pid, exe);
+                            }
+                        }
+                    }
+                }
+            }
+            Message::GameListRemove(pid) => {
+                println!("un {pid}");
+                self.games.remove(&pid);
+            }
             Message::GameListSet(list) => {
                 self.games = HashMap::new();
                 self.sys.refresh_processes(ProcessesToUpdate::Some(
@@ -141,27 +160,25 @@ impl Application for GameModeStatus {
                 ));
                 for pid in &list {
                     if let Some(process) = self.sys.process(Pid::from(*pid as usize)) {
-                        let exe = process
-                            .exe()
-                            .expect("failed to get path")
-                            .file_name()
-                            .expect("failed to get filename")
-                            .to_str()
-                            .unwrap()
-                            .to_string();
-                        self.games.insert(*pid, exe);
+                        if let Some(exe_path) = process.exe() {
+                            if let Some(exe_name) = exe_path.file_name() {
+                                if let Some(exe_str) = exe_name.to_str() {
+                                    let exe = exe_str.to_string();
+                                    self.games.insert(*pid, exe);
+                                }
+                            }
+                        }
                     }
                 }
-                return Command::none();
             }
         }
-        Self::game_list_command()
+        Command::none()
     }
 
     fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
-        struct GameMode;
+        struct RecieveRegister;
         let registered = subscription::channel(
-            std::any::TypeId::of::<GameMode>(),
+            std::any::TypeId::of::<RecieveRegister>(),
             100,
             move |mut output| async move {
                 let conn = Connection::session()
@@ -175,14 +192,16 @@ impl Application for GameModeStatus {
                     .await
                     .expect("Failed to get GameRegistered signal");
 
-                while let Some(_) = registered.next().await {
-                    _ = output.send(Message::GameListUpdate).await;
+                while let Some(msg) = registered.next().await {
+                    let args = msg.args().expect("failed to get args");
+                    _ = output.send(Message::GameListAdd(args.pid)).await;
                 }
                 panic!("Stream ended unexpectedly");
             },
         );
+        struct RecieveUnregister;
         let unregistered = subscription::channel(
-            std::any::TypeId::of::<GameMode>(),
+            std::any::TypeId::of::<RecieveUnregister>(),
             100,
             move |mut output| async move {
                 let conn = Connection::session()
@@ -196,8 +215,9 @@ impl Application for GameModeStatus {
                     .await
                     .expect("Failed to get GameRegistered signal");
 
-                while let Some(_) = unregistered.next().await {
-                    _ = output.send(Message::GameListUpdate).await;
+                while let Some(msg) = unregistered.next().await {
+                    let args = msg.args().expect("failed to get args");
+                    _ = output.send(Message::GameListRemove(args.pid)).await;
                 }
                 panic!("Stream ended unexpectedly");
             },
