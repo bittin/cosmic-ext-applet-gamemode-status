@@ -22,7 +22,6 @@ zvariant = "4.2.0"
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
-rev = "0a1922d4b378de23f55b117b07bad23dda0d64d0"
 default-features = false
 features = ["applet", "tokio", "wayland"]
 
@@ -43,5 +42,5 @@ depends = ["gamemode", "libsystemd0","$auto"]
 strip = true
 lto = true
 
-# [patch.'https://github.com/pop-os/libcosmic']
-# libcosmic = { path = "../libcosmic" }
+[patch.'https://github.com/pop-os/libcosmic']
+libcosmic = { path = "../libcosmic" }
