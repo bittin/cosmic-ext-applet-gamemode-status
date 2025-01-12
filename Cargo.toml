@@ -42,5 +42,5 @@ depends = ["gamemode", "libsystemd0","$auto"]
 strip = true
 lto = true
 
-[patch.'https://github.com/pop-os/libcosmic']
-libcosmic = { path = "../libcosmic" }
+# [patch.'https://github.com/pop-os/libcosmic']
+# libcosmic = { path = "../libcosmic" }
