@@ -2,15 +2,14 @@
 
 use std::collections::HashMap;
 
-use cosmic::app::{Command, Core};
+use cosmic::app::{Core, Task};
 use cosmic::cosmic_theme::Layer;
-use cosmic::iced::alignment::Horizontal;
-use cosmic::iced::wayland::popup::{destroy_popup, get_popup};
+use cosmic::iced::platform_specific::shell::wayland::commands::popup::{destroy_popup, get_popup};
 use cosmic::iced::window::Id;
-use cosmic::iced::{subscription, Alignment, Length, Subscription};
-use cosmic::iced_style::application;
+use cosmic::iced::{stream, Alignment, Length, Subscription};
+//use cosmic::iced_style::application;
 use cosmic::widget::{layer_container, Column, Grid, JustifyContent, Text};
-use cosmic::{Application, Element, Theme};
+use cosmic::{Application, Element};
 
 use crate::dbus::GameModeProxy;
 use futures_util::stream::StreamExt;
@@ -54,7 +53,7 @@ impl Application for GameModeStatus {
         &mut self.core
     }
 
-    fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn init(core: Core, _flags: Self::Flags) -> (Self, Task<Self::Message>) {
         let sys = System::new_with_specifics(
             RefreshKind::new()
                 .with_processes(ProcessRefreshKind::new().with_exe(UpdateKind::OnlyIfNotSet)),
@@ -85,19 +84,19 @@ impl Application for GameModeStatus {
             .applet
             .popup_container(
                 Column::new()
-                    .align_items(Alignment::Center)
+                    .align_x(Alignment::Center)
                     .push(
                         Text::new(if self.games.is_empty() {
                             fl!("gamemode-off")
                         } else {
                             fl!("gamemode-on")
                         })
-                        .horizontal_alignment(Horizontal::Center),
+                        .align_x(Alignment::Center),
                     )
                     .push(
                         layer_container(if self.games.is_empty() {
                             Text::new(fl!("no-active-clients"))
-                                .horizontal_alignment(Horizontal::Center)
+                                .align_x(Alignment::Center)
                                 .into()
                         } else {
                             self.game_grid()
@@ -111,7 +110,7 @@ impl Application for GameModeStatus {
             .into()
     }
 
-    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
         match message {
             Message::TogglePopup => {
                 return if let Some(p) = self.popup.take() {
@@ -119,10 +118,13 @@ impl Application for GameModeStatus {
                 } else {
                     let new_id = Id::unique();
                     self.popup.replace(new_id);
-                    let popup_settings =
-                        self.core
-                            .applet
-                            .get_popup_settings(Id::MAIN, new_id, None, None, None);
+                    let popup_settings = self.core.applet.get_popup_settings(
+                        self.core.main_window_id().unwrap(),
+                        new_id,
+                        None,
+                        None,
+                        None,
+                    );
                     get_popup(popup_settings)
                 };
             }
@@ -172,15 +174,14 @@ impl Application for GameModeStatus {
                 }
             }
         }
-        Command::none()
+        Task::none()
     }
 
     fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
         struct RecieveRegister;
-        let registered = subscription::channel(
+        let registered = Subscription::run_with_id(
             std::any::TypeId::of::<RecieveRegister>(),
-            100,
-            move |mut output| async move {
+            stream::channel(100, move |mut output| async move {
                 let conn = Connection::session()
                     .await
                     .expect("Failled to start dbus session");
@@ -197,13 +198,12 @@ impl Application for GameModeStatus {
                     _ = output.send(Message::GameListAdd(args.pid)).await;
                 }
                 panic!("Stream ended unexpectedly");
-            },
+            }),
         );
         struct RecieveUnregister;
-        let unregistered = subscription::channel(
+        let unregistered = Subscription::run_with_id(
             std::any::TypeId::of::<RecieveUnregister>(),
-            100,
-            move |mut output| async move {
+            stream::channel(100, move |mut output| async move {
                 let conn = Connection::session()
                     .await
                     .expect("Failled to start dbus session");
@@ -220,13 +220,13 @@ impl Application for GameModeStatus {
                     _ = output.send(Message::GameListRemove(args.pid)).await;
                 }
                 panic!("Stream ended unexpectedly");
-            },
+            }),
         );
 
         Subscription::batch(vec![registered, unregistered])
     }
 
-    fn style(&self) -> Option<<Theme as application::StyleSheet>::Style> {
+    fn style(&self) -> Option<cosmic::iced_runtime::Appearance> {
         Some(cosmic::applet::style())
     }
 }
@@ -253,8 +253,8 @@ impl GameModeStatus {
             .into()
     }
 
-    fn game_list_command() -> Command<Message> {
-        Command::perform(
+    fn game_list_command() -> Task<Message> {
+        Task::perform(
             async {
                 let conn = Connection::session()
                     .await

@@ -7,5 +7,5 @@ mod localization;
 use app::GameModeStatus;
 
 fn main() -> cosmic::iced::Result {
-    cosmic::applet::run::<GameModeStatus>(true, ())
+    cosmic::applet::run::<GameModeStatus>(())
 }
