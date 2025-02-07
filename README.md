@@ -7,8 +7,8 @@
 ## Install
 
 ```sh
-git clone https://github.com/D-Brox/cosmic-ext-applet-system-monitor 
-cd cosmic-ext-applet-emoji-selector 
+git clone https://github.com/D-Brox/cosmic-ext-applet-gamemode-status
+cd cosmic-ext-applet-gamemode-status
 ```
 
 For debian based distros you can build and install as a deb package:
