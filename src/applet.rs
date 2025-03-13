@@ -64,7 +64,7 @@ impl Application for GameModeStatus {
             ..Default::default()
         };
 
-        (app, Self::game_list_command())
+        (app, Self::init_game_list())
     }
 
     fn on_close_requested(&self, id: Id) -> Option<Message> {
@@ -74,7 +74,11 @@ impl Application for GameModeStatus {
     fn view(&self) -> Element<Self::Message> {
         self.core
             .applet
-            .icon_button("applications-games-symbolic")
+            .icon_button(if self.games.is_empty() {
+                "computer-symbolic"
+            } else {
+                "applications-games-symbolic"
+            })
             .on_press(Message::TogglePopup)
             .into()
     }
@@ -134,7 +138,6 @@ impl Application for GameModeStatus {
                 }
             }
             Message::GameListAdd(pid) => {
-                println!("re {pid}");
                 let p = Pid::from(pid as usize);
                 self.sys.refresh_processes(ProcessesToUpdate::Some(&[p]));
                 if let Some(process) = self.sys.process(p) {
@@ -149,7 +152,6 @@ impl Application for GameModeStatus {
                 }
             }
             Message::GameListRemove(pid) => {
-                println!("un {pid}");
                 self.games.remove(&pid);
             }
             Message::GameListSet(list) => {
@@ -253,7 +255,7 @@ impl GameModeStatus {
             .into()
     }
 
-    fn game_list_command() -> Task<Message> {
+    fn init_game_list() -> Task<Message> {
         Task::perform(
             async {
                 let conn = Connection::session()

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-mod app;
+mod applet;
 mod dbus;
 mod localization;
 
-use app::GameModeStatus;
+use applet::GameModeStatus;
 
 fn main() -> cosmic::iced::Result {
     cosmic::applet::run::<GameModeStatus>(())
