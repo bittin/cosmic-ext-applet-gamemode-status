@@ -55,8 +55,8 @@ impl Application for GameModeStatus {
 
     fn init(core: Core, _flags: Self::Flags) -> (Self, Task<Self::Message>) {
         let sys = System::new_with_specifics(
-            RefreshKind::new()
-                .with_processes(ProcessRefreshKind::new().with_exe(UpdateKind::OnlyIfNotSet)),
+            RefreshKind::nothing()
+                .with_processes(ProcessRefreshKind::nothing().with_exe(UpdateKind::OnlyIfNotSet)),
         );
         let app = GameModeStatus {
             core,
@@ -139,7 +139,7 @@ impl Application for GameModeStatus {
             }
             Message::GameListAdd(pid) => {
                 let p = Pid::from(pid as usize);
-                self.sys.refresh_processes(ProcessesToUpdate::Some(&[p]));
+                self.sys.refresh_processes(ProcessesToUpdate::Some(&[p]),true);
                 if let Some(process) = self.sys.process(p) {
                     if let Some(exe_path) = process.exe() {
                         if let Some(exe_name) = exe_path.file_name() {
@@ -161,7 +161,7 @@ impl Application for GameModeStatus {
                         .iter()
                         .map(|pid| Pid::from(*pid as usize))
                         .collect::<Vec<_>>(),
-                ));
+                ),true);
                 for pid in &list {
                     if let Some(process) = self.sys.process(Pid::from(*pid as usize)) {
                         if let Some(exe_path) = process.exe() {

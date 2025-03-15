@@ -25,7 +25,7 @@ use zbus::proxy;
     default_service = "com.feralinteractive.GameMode",
     default_path = "/com/feralinteractive/GameMode"
 )]
-trait GameMode {
+pub trait GameMode {
     /// ListGames method
     fn list_games(&self) -> zbus::Result<Vec<(i32, zbus::zvariant::OwnedObjectPath)>>;
 
